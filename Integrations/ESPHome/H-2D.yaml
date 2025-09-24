@@ -1,0 +1,66 @@
+esphome:
+  name: "apollo-h-2d"
+  friendly_name: Apollo H-2D
+  comment: Apollo H-2D
+  name_add_mac_suffix: true
+  platformio_options:
+    board_build.flash_mode: dio
+
+  project:
+    name: "ApolloAutomation.H-2D"
+    version: "${version}"
+
+  min_version: 2023.11.1
+  on_boot:
+    - priority: 500
+      then:
+        - lambda: |-
+            id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 60 * 1000);
+        - if:
+            condition:
+              - switch.is_on: prevent_sleep
+            then:
+              - lambda: |- 
+                  ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA On Boot");
+                  id(deep_sleep_1).prevent_deep_sleep(); 
+    - priority: -10
+      then:
+        - if:
+            condition:
+              - lambda: "return id(runTest);"
+            then:
+              - lambda: "id(testScript).execute();"
+  on_shutdown:
+    - light.turn_off: rgb_light
+
+safe_mode:
+
+external_components:
+  - source: github://ApolloAutomation/ExternalComponents
+    components: [deep_sleep]
+
+logger:
+
+switch:
+  - platform: template
+    name: "Prevent Sleep"
+    id: prevent_sleep
+    icon: mdi:sleep
+    restore_mode: ALWAYS_OFF
+    optimistic: true
+    entity_category: "config"
+
+script:
+  - id: statusCheck
+    then:
+      - light.turn_on: 
+          id: rgb_light
+          brightness: 40%
+          red: 0%
+          green: 100%
+          blue: 0%
+      - delay: 5s
+      - light.turn_off: rgb_light
+
+packages:
+  core: !include Core.yaml
