@@ -39,6 +39,8 @@ globals:
 external_components:
   - source: github://ApolloAutomation/esphome-battery-component
     components: [max17048] #Forked OptionZero
+  #- source: github://ApolloAutomation/ExternalComponents
+  #  components: [deep_sleep]
 
 i2c:
   sda: GPIO1
@@ -49,17 +51,43 @@ deep_sleep:
   id: deep_sleep_1
   sleep_duration: 24h
   run_duration: 90s
-  #esp32_ext1_wakeup:
-  #  mode: ANY_HIGH
-  #  pins:
-  #    - number: GPIO4
-  #      allow_other_uses: true
-  #    - number: GPIO5
-  #      allow_other_uses: true
-  #    - number: GPIO6
-  #      allow_other_uses: true
-  #    - number: GPIO7
-  #      allow_other_uses: true
+  # DEBUG: Log when entering deep sleep
+  # Wake on button press (when pulled LOW since buttons are inverted)
+  wakeup_pin:
+    number: GPIO4
+    allow_other_uses: true
+    inverted: true
+    mode:
+      input: true
+      pullup: true
+
+#  esp32_ext1_wakeup:
+#    mode: ALL_LOW  # Wake when any pin goes LOW (button pressed)
+#    pins:
+#      - number: GPIO4
+#        allow_other_uses: true
+#        inverted: false  # Don't invert for wake-up since we want to wake on LOW
+#        mode:
+#          input: true
+#          pullup: true
+##     - number: GPIO5
+#       allow_other_uses: true
+#       inverted: false
+#       mode:
+#         input: true
+#         pullup: true
+#     - number: GPIO6
+#       allow_other_uses: true
+#       inverted: false
+#       mode:
+#         input: true
+#         pullup: true
+#     - number: GPIO7
+#       allow_other_uses: true
+#       inverted: false
+#       mode:
+#         input: true
+#         pullup: true
 
 switch:
   - platform: factory_reset
@@ -227,7 +255,7 @@ binary_sensor:
       mode:
         input: true
         pullup: true
-      #allow_other_uses: true
+      allow_other_uses: true
     name: "Song Button 1"
     on_release:
       then:

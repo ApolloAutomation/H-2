@@ -35,9 +35,6 @@ esphome:
 
 safe_mode:
 
-external_components:
-  - source: github://ApolloAutomation/ExternalComponents
-    components: [deep_sleep]
 
 logger:
 
