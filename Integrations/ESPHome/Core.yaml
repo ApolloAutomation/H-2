@@ -49,17 +49,17 @@ deep_sleep:
   id: deep_sleep_1
   sleep_duration: 24h
   run_duration: 90s
-  #esp32_ext1_wakeup:
-  #  mode: ANY_HIGH
-  #  pins:
-  #    - number: GPIO4
-  #      allow_other_uses: true
-  #    - number: GPIO5
-  #      allow_other_uses: true
-  #    - number: GPIO6
-  #      allow_other_uses: true
-  #    - number: GPIO7
-  #      allow_other_uses: true
+  esp32_ext1_wakeup:
+    mode: ANY_HIGH
+    pins:
+      - number: GPIO4
+        allow_other_uses: true
+      - number: GPIO5
+        allow_other_uses: true
+      - number: GPIO6
+        allow_other_uses: true
+      - number: GPIO7
+        allow_other_uses: true
 
 switch:
   - platform: factory_reset
@@ -195,7 +195,7 @@ binary_sensor:
     on_press:
       then:
         - lambda: |-
-            id(button_press_timestamp) = millis();    
+            id(button_press_timestamp) = millis();
     on_release:
       then:
         - lambda: |-
@@ -223,25 +223,25 @@ binary_sensor:
     id: back_button_1
     pin:
       number: GPIO4
-      inverted: true
       mode:
         input: true
-        pullup: true
-      #allow_other_uses: true
+        pulldown: true
+      allow_other_uses: true
     name: "Song Button 1"
     on_release:
       then:
-        - script.execute: play_song_1
+        #- script.execute: play_song_1
+        - deep_sleep.enter:
+            id: deep_sleep_1
 
   - platform: gpio
     id: back_button_2
     pin:
       number: GPIO5
-      inverted: true
       mode:
         input: true
-        pullup: true
-      #allow_other_uses: true
+        pulldown: true
+      allow_other_uses: true
     name: "Song Button 2"
     on_release:
       then:
@@ -251,11 +251,10 @@ binary_sensor:
     id: back_button_3
     pin:
       number: GPIO6
-      inverted: true
       mode:
         input: true
-        pullup: true
-      #allow_other_uses: true
+        pulldown: true
+      allow_other_uses: true
     name: "Song Button 3"
     on_release:
       then:
@@ -265,11 +264,10 @@ binary_sensor:
     id: back_button_4
     pin:
       number: GPIO7
-      inverted: true
       mode:
         input: true
-        pullup: true
-      #allow_other_uses: true
+        pulldown: true
+      allow_other_uses: true
     name: "Song Button 4"
     on_release:
       then:
@@ -426,7 +424,7 @@ light:
   - platform: esp32_rmt_led_strip
     id: logo_light
     name: "Logo Light"
-    pin: GPIO15
+    pin: GPIO2
     default_transition_length: 0s
     chipset: WS2812
     num_leds: 33
@@ -551,14 +549,14 @@ light:
 script:
   - id: play_song_1
     then:
-#      - light.turn_on:
-#          brightness: 40%
-#          id: rgb_light
-#          effect: "RainbowWave"
-#      - rtttl.play:
-#          rtttl: !lambda 'return id(song_1).state;'
-#      - delay: 30s
-#      - light.turn_off: rgb_light
+      - light.turn_on:
+          brightness: 40%
+          id: rgb_light
+          effect: "RainbowWave"
+      - rtttl.play:
+          rtttl: !lambda 'return id(song_1).state;'
+      - delay: 30s
+      - light.turn_off: rgb_light
       - if:
           condition:
             - switch.is_off: prevent_sleep
@@ -568,14 +566,14 @@ script:
       
   - id: play_song_2
     then:
-#      - light.turn_on:
-#          brightness: 40%
-#          id: rgb_light
-#          effect: "TwinklingWhite"
-#      - rtttl.play:
-#          rtttl: !lambda 'return id(song_2).state;'
-#      - delay: 30s
-#      - light.turn_off: rgb_light
+      - light.turn_on:
+          brightness: 40%
+          id: rgb_light
+          effect: "TwinklingWhite"
+      - rtttl.play:
+          rtttl: !lambda 'return id(song_2).state;'
+      - delay: 30s
+      - light.turn_off: rgb_light
       - if:
           condition:
             - switch.is_off: prevent_sleep
@@ -585,14 +583,14 @@ script:
 
   - id: play_song_3
     then:
-#      - light.turn_on:
-#          brightness: 40%
-#          id: rgb_light
-#          effect: "RedGreen"
-#      - rtttl.play:
-#          rtttl: !lambda 'return id(song_3).state;'
-#      - delay: 30s
-#      - light.turn_off: rgb_light
+      - light.turn_on:
+          brightness: 40%
+          id: rgb_light
+          effect: "RedGreen"
+      - rtttl.play:
+          rtttl: !lambda 'return id(song_3).state;'
+      - delay: 30s
+      - light.turn_off: rgb_light
       - if:
           condition:
             - switch.is_off: prevent_sleep
@@ -602,14 +600,14 @@ script:
 
   - id: play_song_4
     then:
-#      - light.turn_on:
-#          brightness: 40%
-#          id: rgb_light
-#          effect: "BlueGold"
-#      - rtttl.play:
-#          rtttl: !lambda 'return id(song_4).state;'
-#      - delay: 30s
-#      - light.turn_off: rgb_light
+      - light.turn_on:
+          brightness: 40%
+          id: rgb_light
+          effect: "BlueGold"
+      - rtttl.play:
+          rtttl: !lambda 'return id(song_4).state;'
+      - delay: 30s
+      - light.turn_off: rgb_light
       - if:
           condition:
             - switch.is_off: prevent_sleep
