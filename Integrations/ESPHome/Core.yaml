@@ -230,9 +230,7 @@ binary_sensor:
     name: "Song Button 1"
     on_release:
       then:
-        #- script.execute: play_song_1
-        - deep_sleep.enter:
-            id: deep_sleep_1
+        - script.execute: play_song_1
 
   - platform: gpio
     id: back_button_2
@@ -304,6 +302,7 @@ light:
     chipset: WS2812
     num_leds: 57
     rgb_order: grb
+    rmt_symbols: 48
     effects:
       - pulse:
           name: "Slow Pulse"
@@ -427,8 +426,9 @@ light:
     pin: GPIO2
     default_transition_length: 0s
     chipset: WS2812
-    num_leds: 33
+    num_leds: 34
     rgb_order: grb
+    rmt_symbols: 48
     effects:
       - pulse:
           name: "Slow Pulse"
@@ -553,10 +553,15 @@ script:
           brightness: 40%
           id: rgb_light
           effect: "RainbowWave"
+      - light.turn_on:
+          brightness: 30%
+          id: logo_light
+          effect: "RainbowWave"
       - rtttl.play:
           rtttl: !lambda 'return id(song_1).state;'
       - delay: 30s
       - light.turn_off: rgb_light
+      - light.turn_off: logo_light
       - if:
           condition:
             - switch.is_off: prevent_sleep
@@ -570,10 +575,15 @@ script:
           brightness: 40%
           id: rgb_light
           effect: "TwinklingWhite"
+      - light.turn_on:
+          brightness: 30%
+          id: logo_light
+          effect: "TwinklingWhite"
       - rtttl.play:
           rtttl: !lambda 'return id(song_2).state;'
       - delay: 30s
       - light.turn_off: rgb_light
+      - light.turn_off: logo_light
       - if:
           condition:
             - switch.is_off: prevent_sleep
@@ -587,10 +597,15 @@ script:
           brightness: 40%
           id: rgb_light
           effect: "RedGreen"
+      - light.turn_on:
+          brightness: 30%
+          id: logo_light
+          effect: "RedGreen"
       - rtttl.play:
           rtttl: !lambda 'return id(song_3).state;'
       - delay: 30s
       - light.turn_off: rgb_light
+      - light.turn_off: logo_light
       - if:
           condition:
             - switch.is_off: prevent_sleep
@@ -604,10 +619,15 @@ script:
           brightness: 40%
           id: rgb_light
           effect: "BlueGold"
+      - light.turn_on:
+          brightness: 30%
+          id: logo_light
+          effect: "BlueGold"
       - rtttl.play:
           rtttl: !lambda 'return id(song_4).state;'
       - delay: 30s
       - light.turn_off: rgb_light
+      - light.turn_off: logo_light
       - if:
           condition:
             - switch.is_off: prevent_sleep
