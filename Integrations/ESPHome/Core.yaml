@@ -1,6 +1,13 @@
 substitutions:
   version: "25.8.21.1"
 
+## TODO: 
+# Add OTA Helper
+# After song check if it should sleep
+# Add wakeup pin detection like BTN to trigger song
+
+
+
 esp32:
   board: esp32-c6-devkitm-1
   variant: esp32c6
@@ -267,7 +274,17 @@ binary_sensor:
         pulldown: true
       allow_other_uses: true
     name: "Song Button 4"
-    on_release:
+    on_multi_click:
+    - timing:
+        - ON for at most 1s
+        - OFF for at most 1s
+        - ON for at most 1s
+        - OFF for at least 0.2s
+      then:
+        - script.execute: play_song_x
+    - timing:
+        - ON for at most 1s
+        - OFF for at least 0.5s
       then:
         - script.execute: play_song_4
 
@@ -419,6 +436,76 @@ light:
 
             // Switch the color cycle after each update (1 second)
             blue_gold_cycle = !blue_gold_cycle;
+      - addressable_lambda:
+          name: "Sandstorm"
+          update_interval: 20ms  # Very fast updates for rave effect
+          lambda: |-
+            const float PI = 3.14159265359;
+            static int phase = 0;
+            static int strobe_counter = 0;
+            static int color_shift = 0;
+            
+            // Define rave colors - bright and vibrant
+            static Color rave_colors[6] = {
+              Color(255, 0, 0),    // Red
+              Color(0, 0, 255),    // Blue
+              Color(0, 255, 0),    // Green
+              Color(255, 255, 0),  // Yellow
+              Color(255, 0, 255),  // Magenta
+              Color(0, 255, 255)   // Cyan
+            };
+            
+            // BPM calculations - Sandstorm is ~138 BPM
+            // 138 BPM = 2.3 beats per second = ~435ms per beat
+            // Each update is 20ms, so ~22 updates per beat
+            
+            strobe_counter++;
+            
+            // Create strobing effect every few updates
+            bool strobe_on = (strobe_counter % 3) != 0;  // Off 1/3 of the time for strobe
+            
+            // Rapid color changes
+            if (strobe_counter % 5 == 0) {  // Change colors every 100ms
+              color_shift = (color_shift + 1) % 6;
+            }
+            
+            // Phase shift for wave effects
+            phase = (phase + 15) % 360;  // Very fast phase movement
+            
+            for (int i = 0; i < it.size(); i++) {
+              if (!strobe_on) {
+                // Strobe off - black
+                it[i] = Color(0, 0, 0);
+              } else {
+                // Calculate position-based effects
+                float position_factor = (float)i / it.size();
+                int wave_offset = (int)(position_factor * 180);
+                
+                // Pulsing intensity based on sine wave
+                float intensity = 0.5 + 0.5 * sin((phase + wave_offset) * PI / 180);
+                
+                // Select color based on position and time
+                int color_index = (color_shift + (i % 3)) % 6;
+                Color base_color = rave_colors[color_index];
+                
+                // Random sparkle effect
+                if (rand() % 100 < 10) {  // 10% chance of max brightness sparkle
+                  intensity = 1.0;
+                }
+                
+                // Apply intensity to color
+                it[i] = Color(
+                  base_color.r * intensity,
+                  base_color.g * intensity,
+                  base_color.b * intensity
+                );
+              }
+            }
+            
+            // Reset strobe counter to stay in sync
+            if (strobe_counter >= 22) {  // ~1 beat
+              strobe_counter = 0;
+            }
         
   - platform: esp32_rmt_led_strip
     id: logo_light
@@ -545,6 +632,76 @@ light:
 
             // Switch the color cycle after each update (1 second)
             blue_gold_cycle = !blue_gold_cycle;
+      - addressable_lambda:
+          name: "Sandstorm"
+          update_interval: 20ms  # Very fast updates for rave effect
+          lambda: |-
+            const float PI = 3.14159265359;
+            static int phase = 0;
+            static int strobe_counter = 0;
+            static int color_shift = 0;
+            
+            // Define rave colors - bright and vibrant
+            static Color rave_colors[6] = {
+              Color(255, 0, 0),    // Red
+              Color(0, 0, 255),    // Blue
+              Color(0, 255, 0),    // Green
+              Color(255, 255, 0),  // Yellow
+              Color(255, 0, 255),  // Magenta
+              Color(0, 255, 255)   // Cyan
+            };
+            
+            // BPM calculations - Sandstorm is ~138 BPM
+            // 138 BPM = 2.3 beats per second = ~435ms per beat
+            // Each update is 20ms, so ~22 updates per beat
+            
+            strobe_counter++;
+            
+            // Create strobing effect every few updates
+            bool strobe_on = (strobe_counter % 3) != 0;  // Off 1/3 of the time for strobe
+            
+            // Rapid color changes
+            if (strobe_counter % 5 == 0) {  // Change colors every 100ms
+              color_shift = (color_shift + 1) % 6;
+            }
+            
+            // Phase shift for wave effects
+            phase = (phase + 15) % 360;  // Very fast phase movement
+            
+            for (int i = 0; i < it.size(); i++) {
+              if (!strobe_on) {
+                // Strobe off - black
+                it[i] = Color(0, 0, 0);
+              } else {
+                // Calculate position-based effects
+                float position_factor = (float)i / it.size();
+                int wave_offset = (int)(position_factor * 180);
+                
+                // Pulsing intensity based on sine wave
+                float intensity = 0.5 + 0.5 * sin((phase + wave_offset) * PI / 180);
+                
+                // Select color based on position and time
+                int color_index = (color_shift + (i % 3)) % 6;
+                Color base_color = rave_colors[color_index];
+                
+                // Random sparkle effect
+                if (rand() % 100 < 10) {  // 10% chance of max brightness sparkle
+                  intensity = 1.0;
+                }
+                
+                // Apply intensity to color
+                it[i] = Color(
+                  base_color.r * intensity,
+                  base_color.g * intensity,
+                  base_color.b * intensity
+                );
+              }
+            }
+            
+            // Reset strobe counter to stay in sync
+            if (strobe_counter >= 22) {  // ~1 beat
+              strobe_counter = 0;
+            }
 
 script:
   - id: play_song_1
@@ -625,6 +782,28 @@ script:
           effect: "BlueGold"
       - rtttl.play:
           rtttl: !lambda 'return id(song_4).state;'
+      - delay: 30s
+      - light.turn_off: rgb_light
+      - light.turn_off: logo_light
+      - if:
+          condition:
+            - switch.is_off: prevent_sleep
+          then:
+            - deep_sleep.enter:
+                id: deep_sleep_1
+
+  - id: play_song_x
+    then:
+      - light.turn_on:
+          brightness: 40%
+          id: rgb_light
+          effect: "Sandstorm"
+      - light.turn_on:
+          brightness: 30%
+          id: logo_light
+          effect: "Sandstorm"
+      - rtttl.play:
+          rtttl: Sandstorm:d=16,o=6,b=85:e,e,e,e,8e,e,e,a,a,a,a,g,g,g,d,e,e,e,e, 8e,e,a,e,e,e,e,8e,e,d,e,e,e,e,e,8e,e,e,a,a,a,a,g,g,g,d,e,e,e,e,8e,e, a,e,e,e,e,8e,e,d,e,e,e,e,e,8e,e,e,a,a,a,a,g,g,g,d,e,e,e,e,8e,e,a,e, e,e,e,8e,e,d,e
       - delay: 30s
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
