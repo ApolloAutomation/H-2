@@ -25,6 +25,48 @@ esphome:
               - lambda: |- 
                   ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA On Boot");
                   id(deep_sleep_1).prevent_deep_sleep(); 
+    # Check button states for powered-off scenario
+    - priority: -100
+      then:
+      - lambda: |-
+          uint64_t wake = esp_sleep_get_ext1_wakeup_status();
+          
+          // Only process deep sleep wake if we actually woke from deep sleep
+          if (wake != 0) {
+            uint32_t low = wake % 0xFFFFFFFF;
+            uint32_t high = (wake >> 32) % 0xFFFFFFFF;
+            
+            ESP_LOGI("Apollo", "Deep sleep wake detected, wake status: 0x%llx", wake);
+            
+            // Check which song button caused the wake-up
+            if ((low) & (1<<(4))) {
+              id(wakeup_button_pressed).publish_state("1");
+              id(btn_play_song_1).press();
+            }
+            else if ((low) & (1<<(5))) {
+              id(wakeup_button_pressed).publish_state("2");
+              id(btn_play_song_2).press();
+            }
+            else if ((low) & (1<<(6))) {
+              id(wakeup_button_pressed).publish_state("3");
+              id(btn_play_song_3).press();
+            }
+            else if ((low) & (1<<(7))) {
+              id(wakeup_button_pressed).publish_state("4");
+              id(btn_play_song_4).press();
+            }
+            else {
+              id(wakeup_button_pressed).publish_state("0");
+            }
+          }
+          else {
+            // If no deep sleep wake and no button was detected in powered-off scenario
+            // then set to "0" (no button press)
+            if (id(wakeup_button_pressed).state == "") {
+              ESP_LOGI("Apollo", "No wake source detected, setting to 0");
+              id(wakeup_button_pressed).publish_state("0");
+            }
+          }
     - priority: -10
       then:
         - if:
@@ -114,6 +156,7 @@ api:
             - lambda: |- 
                 ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA Or Switch");
                 id(deep_sleep_1).prevent_deep_sleep();
+      - component.update: wakeup_button_pressed
 switch:
   - platform: template
     name: "Prevent Sleep"

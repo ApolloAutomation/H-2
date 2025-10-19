@@ -152,6 +152,12 @@ number:
     on_value:
       - lambda: id(rtttl_buzzer).set_gain(pow(x / 100.0f, 3));
 
+text_sensor:
+  - platform: template
+    id: wakeup_button_pressed
+    name: "Wake-up Button Pressed"
+    icon: "mdi:gesture-tap-button"
+
 text:
   - platform: template
     name: "Song Text 1"
