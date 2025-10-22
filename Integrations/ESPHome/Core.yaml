@@ -1,12 +1,5 @@
 substitutions:
-  version: "25.8.21.1"
-
-## TODO: 
-# Add OTA Helper
-# After song check if it should sleep
-# Add wakeup pin detection like BTN to trigger song
-
-
+  version: "25.10.22.1"
 
 esp32:
   board: esp32-c6-devkitm-1
@@ -725,12 +718,7 @@ script:
       - delay: 30s
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
-      - if:
-          condition:
-            - switch.is_off: prevent_sleep
-          then:
-            - deep_sleep.enter:
-                id: deep_sleep_1
+      - script.execute: ShouldSleep
       
   - id: play_song_2
     then:
@@ -747,12 +735,7 @@ script:
       - delay: 30s
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
-      - if:
-          condition:
-            - switch.is_off: prevent_sleep
-          then:
-            - deep_sleep.enter:
-                id: deep_sleep_1
+      - script.execute: ShouldSleep
 
   - id: play_song_3
     then:
@@ -769,12 +752,7 @@ script:
       - delay: 30s
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
-      - if:
-          condition:
-            - switch.is_off: prevent_sleep
-          then:
-            - deep_sleep.enter:
-                id: deep_sleep_1
+      - script.execute: ShouldSleep
 
   - id: play_song_4
     then:
@@ -791,12 +769,7 @@ script:
       - delay: 30s
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
-      - if:
-          condition:
-            - switch.is_off: prevent_sleep
-          then:
-            - deep_sleep.enter:
-                id: deep_sleep_1
+      - script.execute: ShouldSleep
 
   - id: play_song_x
     then:
@@ -813,12 +786,7 @@ script:
       - delay: 30s
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
-      - if:
-          condition:
-            - switch.is_off: prevent_sleep
-          then:
-            - deep_sleep.enter:
-                id: deep_sleep_1
+      - script.execute: ShouldSleep
 
   - id: testScript
     then:
