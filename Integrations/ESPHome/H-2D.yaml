@@ -1,0 +1,119 @@
+esphome:
+  name: "apollo-h-2d"
+  friendly_name: Apollo H-2D
+  comment: Apollo H-2D
+  name_add_mac_suffix: true
+  platformio_options:
+    board_build.flash_mode: dio
+
+  project:
+    name: "ApolloAutomation.H-2D"
+    version: "${version}"
+
+  min_version: 2023.11.1
+  on_boot:
+    - priority: 500
+      then:
+        - lambda: |-
+            id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 60 * 1000);
+        - if:
+            condition:
+              - switch.is_on: prevent_sleep
+            then:
+              - lambda: |-
+                  ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA On Boot");
+                  id(deep_sleep_1).prevent_deep_sleep();
+    
+    # Check button states for powered-off scenario
+    - priority: -100
+      then:
+      - lambda: |-
+          uint64_t wake = esp_sleep_get_ext1_wakeup_status();
+          
+          // Only process deep sleep wake if we actually woke from deep sleep
+          if (wake != 0) {
+            uint32_t low = wake % 0xFFFFFFFF;
+            uint32_t high = (wake >> 32) % 0xFFFFFFFF;
+            
+            ESP_LOGI("Apollo", "Deep sleep wake detected, wake status: 0x%llx", wake);
+            
+            // Check which song button caused the wake-up
+            if ((low) & (1<<(4))) {
+              id(wakeup_button_pressed).publish_state("1");
+              id(btn_play_song_1).press();
+            }
+            else if ((low) & (1<<(5))) {
+              id(wakeup_button_pressed).publish_state("2");
+              id(btn_play_song_2).press();
+            }
+            else if ((low) & (1<<(6))) {
+              id(wakeup_button_pressed).publish_state("3");
+              id(btn_play_song_3).press();
+            }
+            else if ((low) & (1<<(7))) {
+              id(wakeup_button_pressed).publish_state("4");
+              id(btn_play_song_4).press();
+            }
+            else {
+              id(wakeup_button_pressed).publish_state("0");
+            }
+          }
+          else {
+            // If no deep sleep wake and no button was detected in powered-off scenario
+            // then set to "0" (no button press)
+            if (id(wakeup_button_pressed).state == "") {
+              ESP_LOGI("Apollo", "No wake source detected, setting to 0");
+              id(wakeup_button_pressed).publish_state("0");
+            }
+          }
+    
+    - priority: -10
+      then:
+        - if:
+            condition:
+              - lambda: "return id(runTest);"
+            then:
+              - lambda: "id(testScript).execute();"
+  on_shutdown:
+    - light.turn_off: rgb_light
+
+safe_mode:
+
+logger:
+
+switch:
+  - platform: template
+    name: "Prevent Sleep"
+    id: prevent_sleep
+    icon: mdi:sleep
+    restore_mode: ALWAYS_OFF
+    optimistic: true
+    entity_category: "config"
+
+script:
+  - id: statusCheck
+    then:
+      - light.turn_on: 
+          id: rgb_light
+          brightness: 40%
+          red: 0%
+          green: 100%
+          blue: 0%
+      - delay: 5s
+      - light.turn_off: rgb_light
+  - id: ShouldSleep
+    then:
+      - if:
+          condition:
+            or:
+              - switch.is_on: prevent_sleep
+          then:
+            - lambda: |-
+                ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA On Boot");
+                id(deep_sleep_1).prevent_deep_sleep();
+          else: 
+            - deep_sleep.enter:
+                id: deep_sleep_1
+
+packages:
+  core: !include Core.yaml

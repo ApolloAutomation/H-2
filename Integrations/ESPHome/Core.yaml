@@ -1,0 +1,897 @@
+substitutions:
+  version: "25.10.22.1"
+
+esp32:
+  board: esp32-c6-devkitm-1
+  variant: esp32c6
+  flash_size: 8MB
+  framework:
+    type: esp-idf
+
+output:
+  - platform: ledc
+    pin: GPIO20
+    id: buzzer
+    max_power: 60%
+
+rtttl:
+  id: rtttl_buzzer
+  output: buzzer
+
+globals:
+  - id: cycleCounter
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: button_press_timestamp
+    restore_value: no
+    type: uint32_t
+    initial_value: '0'
+  - id: runTest
+    restore_value: yes
+    type: bool
+    initial_value: "true"
+  - id: testCycleCount
+    type: int
+    restore_value: no
+    initial_value: "0"
+
+external_components:
+  - source: github://ApolloAutomation/esphome-battery-component
+    components: [max17048] #Forked OptionZero
+
+i2c:
+  sda: GPIO1
+  scl: GPIO0
+  id: bus_a
+
+deep_sleep:
+  id: deep_sleep_1
+  sleep_duration: 24h
+  run_duration: 90s
+  esp32_ext1_wakeup:
+    mode: ANY_HIGH
+    pins:
+      - number: GPIO4
+        allow_other_uses: true
+      - number: GPIO5
+        allow_other_uses: true
+      - number: GPIO6
+        allow_other_uses: true
+      - number: GPIO7
+        allow_other_uses: true
+
+switch:
+  - platform: factory_reset
+    id: factory_reset_switch
+    internal: true
+
+  - platform: gpio
+    pin: GPIO18
+    name: "Accessory Power"
+    id: accessory_power
+    restore_mode: ALWAYS_ON
+    setup_priority: 2000
+    internal: true
+  - platform: gpio
+    pin: GPIO19
+    name: "Accessory Power2"
+    id: accessory_power2
+    restore_mode: ALWAYS_ON
+    setup_priority: 2000
+    internal: true
+
+button:
+  - platform: factory_reset
+    id: factory_reset_button
+    name: "Factory Reset"
+    entity_category: diagnostic
+    internal: true
+  - platform: template
+    id: btn_play_song_1
+    name: "Play Song 1"
+    on_press:
+      then:
+        - script.execute: play_song_1
+  - platform: template
+    id: btn_play_song_2
+    name: "Play Song 2"
+    on_press:
+      then:
+        - script.execute: play_song_2
+  - platform: template
+    id: btn_play_song_3
+    name: "Play Song 3"
+    on_press:
+      then:
+        - script.execute: play_song_3
+  - platform: template
+    id: btn_play_song_4
+    name: "Play Song 4"
+    on_press:
+      then:
+        - script.execute: play_song_4
+
+number:
+  - platform: template
+    name: "Sleep Duration"
+    id: deep_sleep_sleep_duration
+    min_value: 0
+    max_value: 800
+    step: 1
+    mode: box
+    update_interval: never
+    optimistic: true
+    restore_value: true
+    initial_value: 24
+    icon: "mdi:arrow-collapse-right"
+    entity_category: CONFIG
+    unit_of_measurement: "h"
+    on_value:
+      then:
+        - lambda: |-
+            id(deep_sleep_1).set_sleep_duration(x * 60 * 60 * 1000);
+
+  - platform: template
+    name: Volume
+    id: volume_control
+    min_value: 0
+    max_value: 100
+    initial_value: 100
+    unit_of_measurement: "%"
+    step: 1
+    optimistic: true
+    restore_value: true
+    on_value:
+      - lambda: id(rtttl_buzzer).set_gain(pow(x / 100.0f, 3));
+
+text_sensor:
+  - platform: template
+    id: wakeup_button_pressed
+    name: "Wake-up Button Pressed"
+    icon: "mdi:gesture-tap-button"
+
+text:
+  - platform: template
+    name: "Song Text 1"
+    id: song_1
+    icon: mdi:music-note
+    entity_category: "config"
+    restore_value: true
+    mode: text
+    optimistic: true
+    initial_value: "jingle:d=8,o=5,b=120:e6,e6,e.6,16p,e6,e6,e.6,16p,e6,g6,c.6,16d6,e.6,p,f6,f6,f.6,16f6,f6,e6,e6,16e6,16e6,e6,d6,d6,e6,d.6,16p,g6,p,e6,e6,e.6,16p,e6,e6,e.6,16p,e6,g6,c.6,16d6,2e6,f6,f6,f.6,16f6,f6,e6,e6,16e6,16e6,g6,g6,f6,d6,2c6;"
+  - platform: template
+    name: "Song Text 2"
+    id: song_2
+    icon: mdi:music-note
+    entity_category: "config"
+    restore_value: true
+    mode: text
+    optimistic: true
+    initial_value: "rudolph:d=4,o=5,b=125:8g.,16a,8p,16g.,e,c6,a,2g.,8g.,16a,8g.,16a,g,c6,1b,8f.,16g,8p,16f.,d,b,a,2g.,8g.,16a,8g.,16a,g,a,1e,8g.,16a,8p,16g.,e,c6,a,1g,8g.,16a,8g.,16a,g,c6,1b,8f.,16g,8p,16f.,d,b,a,1g,8g.,16a,8g.,16a,g,d6,2c6;"
+  - platform: template
+    name: "Song Text 3"
+    id: song_3
+    icon: mdi:music-note
+    entity_category: "config"
+    restore_value: true
+    mode: text
+    optimistic: true
+    initial_value: "snow:d=4,o=5,b=125:8c,8c,8c6,8c6,a#,a,g,f,2c,8c,16c,g.,8f,g.,8f,e,2c,d,8d6,8d6,c6,a#,a,2g.,8e.6,16d6,c6,8c.6,16a#,a,8a.,16g,2f.,c,8c6,8c6,a#,a,g,f,2c,8c.,16c,g.,8f,g.,8f,e,2c,d,8d6,8d6,c6,a#,a,2g.,8e.6,16d6,c6,8c.6,16a#,a,8a.,16g,2f.;"
+  - platform: template
+    name: "Song Text 4"
+    id: song_4
+    icon: mdi:music-note
+    entity_category: "config"
+    restore_value: true
+    mode: text
+    optimistic: true
+    initial_value: "bluechristmas:d=4,o=5,b=90:8c,f,g,1a,16a,16g,16a,2g,f,e,2g.,c,g.,8a,2a#.,16a#,16c6,16a#,32c6,16a#,2a.,g,f,2a,8a,8a#,8a,2c.6,8a#,c6,8a#.,2a,2c.6,8a#,8a.,2g,g,1a,2a,g,8f,2a,g,f,e,e,f,f#,g."
+
+binary_sensor:
+  - platform: gpio
+    pin: 
+      number: GPIO9
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: reset_button
+    on_press:
+      then:
+        - lambda: |-
+            id(button_press_timestamp) = millis();
+    on_release:
+      then:
+        - lambda: |-
+            if (millis() - id(button_press_timestamp) >= 10000) {
+              // Remove Wifi
+              id(factory_reset_switch).turn_on();
+            }
+            else if (millis() - id(button_press_timestamp) >= 3000) {
+              //Turn Prevent Sleep On
+              id(prevent_sleep).turn_on();
+              //Prevent Sleep
+              id(deep_sleep_1).prevent_deep_sleep();
+            }
+            else {
+              // StatusCheck
+              id(statusCheck).execute();
+              delay(3000);
+              id(testCycleCount) = 0;
+              id(runTest) = true;
+              id(testScript).execute();
+            }
+
+  # H-2 Individual Song Buttons (4 buttons)
+  - platform: gpio
+    id: back_button_1
+    pin:
+      number: GPIO4
+      mode:
+        input: true
+        pulldown: true
+      allow_other_uses: true
+    name: "Song Button 1"
+    on_release:
+      then:
+        - script.execute: play_song_1
+
+  - platform: gpio
+    id: back_button_2
+    pin:
+      number: GPIO5
+      mode:
+        input: true
+        pulldown: true
+      allow_other_uses: true
+    name: "Song Button 2"
+    on_release:
+      then:
+        - script.execute: play_song_2
+
+  - platform: gpio
+    id: back_button_3
+    pin:
+      number: GPIO6
+      mode:
+        input: true
+        pulldown: true
+      allow_other_uses: true
+    name: "Song Button 3"
+    on_release:
+      then:
+        - script.execute: play_song_3
+
+  - platform: gpio
+    id: back_button_4
+    pin:
+      number: GPIO7
+      mode:
+        input: true
+        pulldown: true
+      allow_other_uses: true
+    name: "Song Button 4"
+    on_multi_click:
+    - timing:
+        - ON for at most 1s
+        - OFF for at most 1s
+        - ON for at most 1s
+        - OFF for at least 0.2s
+      then:
+        - script.execute: play_song_x
+    - timing:
+        - ON for at most 1s
+        - OFF for at least 0.5s
+      then:
+        - script.execute: play_song_4
+
+sensor:
+  - platform: internal_temperature
+    name: "ESP Temperature"
+    id: sys_esp_temperature
+
+  - platform: uptime
+    name: Uptime
+    id: sys_uptime
+    update_interval: 60s
+
+  - platform: max17048
+    battery_voltage:
+      name: Battery voltage
+      id: batt_v
+    battery_level:
+      name: Battery level
+      id: batt_pct
+      filters:
+        - lambda: |
+            if (x > 100) return 100;
+            else return (x);
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: rgb_light
+    name: "RGB Light"
+    pin: GPIO3
+    default_transition_length: 0s
+    chipset: WS2812
+    num_leds: 57
+    rgb_order: grb
+    rmt_symbols: 48
+    effects:
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 250ms
+          update_interval: 250ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 100ms
+          update_interval: 100ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - addressable_lambda:
+          name: "RainbowWave"
+          update_interval: 100ms  # Controls speed of wave movement
+          lambda: |-
+            static int start_hue = 0; // Initial hue position
+
+            // Function to convert HSV to RGB
+            auto hsv_to_rgb = [](float hue, float saturation, float value) -> Color {
+              int h = (int)(hue / 60) % 6;
+              float f = hue / 60 - h;
+              float p = value * (1 - saturation);
+              float q = value * (1 - f * saturation);
+              float t = value * (1 - (1 - f) * saturation);
+
+              float r = 0, g = 0, b = 0;
+              if (h == 0) { r = value; g = t; b = p; }
+              else if (h == 1) { r = q; g = value; b = p; }
+              else if (h == 2) { r = p; g = value; b = t; }
+              else if (h == 3) { r = p; g = q; b = value; }
+              else if (h == 4) { r = t; g = p; b = value; }
+              else if (h == 5) { r = value; g = p; b = q; }
+
+              return Color(r * 255, g * 255, b * 255);
+            };
+
+            for (int i = 0; i < it.size(); i++) {
+              // Calculate the hue for each LED, offset by position and starting hue
+              float hue = fmod(start_hue + (i * 10), 360);  // Adjust "10" for wave tightness
+
+              // Convert HSV to RGB and apply it to the LED
+              it[i] = hsv_to_rgb(hue, 1.0, 1.0);  // Full saturation and brightness
+            }
+
+            // Increment start_hue to create the wave movement
+            start_hue = (start_hue + 5) % 360;  // Adjust "5" for wave speed
+      - addressable_lambda:
+          name: "TwinklingWhite"
+          update_interval: 100ms  # Update frequently for subtle brightness changes
+          lambda: |-
+            for (int i = 0; i < it.size(); i++) {
+              // Generate a random brightness factor between 50% and 100%
+              float brightness_factor = 0.5 + (rand() % 30) / 75.0;
+
+              // Apply brightness to white color (255, 255, 255) for a twinkle effect
+              int white_r = 255 * brightness_factor;
+              int white_g = 255 * brightness_factor;
+              int white_b = 255 * brightness_factor;
+
+              // Set LED color with adjusted brightness
+              it[i] = Color(white_r, white_g, white_b);
+            }
+      - addressable_lambda:
+          name: "RedGreen"
+          update_interval: 1000ms  # Switch colors every second
+          lambda: |-
+            // Keep track of the current color cycle using a flag
+            static bool red_green_cycle = true;
+            
+            for (int i = 0; i < it.size(); i++) {
+              // Alternate between red and green for each LED
+              if (i % 2 == 0) {
+                if (red_green_cycle) {
+                  it[i] = Color(255, 0, 0);  // Red
+                } else {
+                  it[i] = Color(0, 255, 0);  // Green
+                }
+              } else {
+                if (red_green_cycle) {
+                  it[i] = Color(0, 255, 0);  // Green
+                } else {
+                  it[i] = Color(255, 0, 0);  // Red
+                }
+              }
+            }
+
+            // Switch the color cycle after each update (1 second)
+            red_green_cycle = !red_green_cycle;
+      - addressable_lambda:
+          name: "BlueGold"
+          update_interval: 1000ms  # Switch colors every second
+          lambda: |-
+            // Keep track of the current color cycle using a flag
+            static bool blue_gold_cycle = true;
+            
+            for (int i = 0; i < it.size(); i++) {
+              // Alternate between blue and gold for each LED
+              if (i % 2 == 0) {
+                if (blue_gold_cycle) {
+                  it[i] = Color(0, 100, 255);  // Blue
+                } else {
+                  it[i] = Color(255, 215, 0);  // Gold
+                }
+              } else {
+                if (blue_gold_cycle) {
+                  it[i] = Color(255, 215, 0);  // Gold
+                } else {
+                  it[i] = Color(0, 100, 255);  // Blue
+                }
+              }
+            }
+
+            // Switch the color cycle after each update (1 second)
+            blue_gold_cycle = !blue_gold_cycle;
+      - addressable_lambda:
+          name: "Sandstorm"
+          update_interval: 20ms  # Very fast updates for rave effect
+          lambda: |-
+            const float PI = 3.14159265359;
+            static int phase = 0;
+            static int strobe_counter = 0;
+            static int color_shift = 0;
+            
+            // Define rave colors - bright and vibrant
+            static Color rave_colors[6] = {
+              Color(255, 0, 0),    // Red
+              Color(0, 0, 255),    // Blue
+              Color(0, 255, 0),    // Green
+              Color(255, 255, 0),  // Yellow
+              Color(255, 0, 255),  // Magenta
+              Color(0, 255, 255)   // Cyan
+            };
+            
+            // BPM calculations - Sandstorm is ~138 BPM
+            // 138 BPM = 2.3 beats per second = ~435ms per beat
+            // Each update is 20ms, so ~22 updates per beat
+            
+            strobe_counter++;
+            
+            // Create strobing effect every few updates
+            bool strobe_on = (strobe_counter % 3) != 0;  // Off 1/3 of the time for strobe
+            
+            // Rapid color changes
+            if (strobe_counter % 5 == 0) {  // Change colors every 100ms
+              color_shift = (color_shift + 1) % 6;
+            }
+            
+            // Phase shift for wave effects
+            phase = (phase + 15) % 360;  // Very fast phase movement
+            
+            for (int i = 0; i < it.size(); i++) {
+              if (!strobe_on) {
+                // Strobe off - black
+                it[i] = Color(0, 0, 0);
+              } else {
+                // Calculate position-based effects
+                float position_factor = (float)i / it.size();
+                int wave_offset = (int)(position_factor * 180);
+                
+                // Pulsing intensity based on sine wave
+                float intensity = 0.5 + 0.5 * sin((phase + wave_offset) * PI / 180);
+                
+                // Select color based on position and time
+                int color_index = (color_shift + (i % 3)) % 6;
+                Color base_color = rave_colors[color_index];
+                
+                // Random sparkle effect
+                if (rand() % 100 < 10) {  // 10% chance of max brightness sparkle
+                  intensity = 1.0;
+                }
+                
+                // Apply intensity to color
+                it[i] = Color(
+                  base_color.r * intensity,
+                  base_color.g * intensity,
+                  base_color.b * intensity
+                );
+              }
+            }
+            
+            // Reset strobe counter to stay in sync
+            if (strobe_counter >= 22) {  // ~1 beat
+              strobe_counter = 0;
+            }
+      - addressable_lambda:
+          name: "TwinklingBlues"
+          update_interval: 150ms  # Slower update for more mellow blue effect
+          lambda: |-
+            for (int i = 0; i < it.size(); i++) {
+              // Generate random values for different shades of blue
+              float brightness = 0.4 + (rand() % 60) / 100.0; // 40% to 100% brightness
+              int shade_variation = rand() % 4; // 4 different blue shades
+              
+              int red_val = 0;
+              int green_val = 0;
+              int blue_val = 0;
+              
+              switch(shade_variation) {
+                case 0: // Deep blue
+                  red_val = 0 * brightness;
+                  green_val = 50 * brightness;
+                  blue_val = 255 * brightness;
+                  break;
+                case 1: // Sky blue
+                  red_val = 135 * brightness;
+                  green_val = 206 * brightness;
+                  blue_val = 235 * brightness;
+                  break;
+                case 2: // Royal blue
+                  red_val = 65 * brightness;
+                  green_val = 105 * brightness;
+                  blue_val = 225 * brightness;
+                  break;
+                case 3: // Ice blue
+                  red_val = 176 * brightness;
+                  green_val = 224 * brightness;
+                  blue_val = 230 * brightness;
+                  break;
+              }
+              
+              it[i] = Color(red_val, green_val, blue_val);
+            }
+        
+  - platform: esp32_rmt_led_strip
+    id: logo_light
+    name: "Logo Light"
+    pin: GPIO2
+    default_transition_length: 0s
+    chipset: WS2812
+    num_leds: 34
+    rgb_order: grb
+    rmt_symbols: 48
+    effects:
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 250ms
+          update_interval: 250ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 100ms
+          update_interval: 100ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - addressable_lambda:
+          name: "RainbowWave"
+          update_interval: 100ms  # Controls speed of wave movement
+          lambda: |-
+            static int start_hue = 0; // Initial hue position
+
+            // Function to convert HSV to RGB
+            auto hsv_to_rgb = [](float hue, float saturation, float value) -> Color {
+              int h = (int)(hue / 60) % 6;
+              float f = hue / 60 - h;
+              float p = value * (1 - saturation);
+              float q = value * (1 - f * saturation);
+              float t = value * (1 - (1 - f) * saturation);
+
+              float r = 0, g = 0, b = 0;
+              if (h == 0) { r = value; g = t; b = p; }
+              else if (h == 1) { r = q; g = value; b = p; }
+              else if (h == 2) { r = p; g = value; b = t; }
+              else if (h == 3) { r = p; g = q; b = value; }
+              else if (h == 4) { r = t; g = p; b = value; }
+              else if (h == 5) { r = value; g = p; b = q; }
+
+              return Color(r * 255, g * 255, b * 255);
+            };
+
+            for (int i = 0; i < it.size(); i++) {
+              // Calculate the hue for each LED, offset by position and starting hue
+              float hue = fmod(start_hue + (i * 10), 360);  // Adjust "10" for wave tightness
+
+              // Convert HSV to RGB and apply it to the LED
+              it[i] = hsv_to_rgb(hue, 1.0, 1.0);  // Full saturation and brightness
+            }
+
+            // Increment start_hue to create the wave movement
+            start_hue = (start_hue + 5) % 360;  // Adjust "5" for wave speed
+      - addressable_lambda:
+          name: "TwinklingWhite"
+          update_interval: 100ms  # Update frequently for subtle brightness changes
+          lambda: |-
+            for (int i = 0; i < it.size(); i++) {
+              // Generate a random brightness factor between 50% and 100%
+              float brightness_factor = 0.5 + (rand() % 30) / 75.0;
+
+              // Apply brightness to white color (255, 255, 255) for a twinkle effect
+              int white_r = 255 * brightness_factor;
+              int white_g = 255 * brightness_factor;
+              int white_b = 255 * brightness_factor;
+
+              // Set LED color with adjusted brightness
+              it[i] = Color(white_r, white_g, white_b);
+            }
+      - addressable_lambda:
+          name: "RedGreen"
+          update_interval: 1000ms  # Switch colors every second
+          lambda: |-
+            // Keep track of the current color cycle using a flag
+            static bool red_green_cycle = true;
+            
+            for (int i = 0; i < it.size(); i++) {
+              // Alternate between red and green for each LED
+              if (i % 2 == 0) {
+                if (red_green_cycle) {
+                  it[i] = Color(255, 0, 0);  // Red
+                } else {
+                  it[i] = Color(0, 255, 0);  // Green
+                }
+              } else {
+                if (red_green_cycle) {
+                  it[i] = Color(0, 255, 0);  // Green
+                } else {
+                  it[i] = Color(255, 0, 0);  // Red
+                }
+              }
+            }
+
+            // Switch the color cycle after each update (1 second)
+            red_green_cycle = !red_green_cycle;
+      - addressable_lambda:
+          name: "BlueGold"
+          update_interval: 1000ms  # Switch colors every second
+          lambda: |-
+            // Keep track of the current color cycle using a flag
+            static bool blue_gold_cycle = true;
+            
+            for (int i = 0; i < it.size(); i++) {
+              // Alternate between blue and gold for each LED
+              if (i % 2 == 0) {
+                if (blue_gold_cycle) {
+                  it[i] = Color(0, 100, 255);  // Blue
+                } else {
+                  it[i] = Color(255, 215, 0);  // Gold
+                }
+              } else {
+                if (blue_gold_cycle) {
+                  it[i] = Color(255, 215, 0);  // Gold
+                } else {
+                  it[i] = Color(0, 100, 255);  // Blue
+                }
+              }
+            }
+
+            // Switch the color cycle after each update (1 second)
+            blue_gold_cycle = !blue_gold_cycle;
+      - addressable_lambda:
+          name: "Sandstorm"
+          update_interval: 20ms  # Very fast updates for rave effect
+          lambda: |-
+            const float PI = 3.14159265359;
+            static int phase = 0;
+            static int strobe_counter = 0;
+            static int color_shift = 0;
+            
+            // Define rave colors - bright and vibrant
+            static Color rave_colors[6] = {
+              Color(255, 0, 0),    // Red
+              Color(0, 0, 255),    // Blue
+              Color(0, 255, 0),    // Green
+              Color(255, 255, 0),  // Yellow
+              Color(255, 0, 255),  // Magenta
+              Color(0, 255, 255)   // Cyan
+            };
+            
+            // BPM calculations - Sandstorm is ~138 BPM
+            // 138 BPM = 2.3 beats per second = ~435ms per beat
+            // Each update is 20ms, so ~22 updates per beat
+            
+            strobe_counter++;
+            
+            // Create strobing effect every few updates
+            bool strobe_on = (strobe_counter % 3) != 0;  // Off 1/3 of the time for strobe
+            
+            // Rapid color changes
+            if (strobe_counter % 5 == 0) {  // Change colors every 100ms
+              color_shift = (color_shift + 1) % 6;
+            }
+            
+            // Phase shift for wave effects
+            phase = (phase + 15) % 360;  // Very fast phase movement
+            
+            for (int i = 0; i < it.size(); i++) {
+              if (!strobe_on) {
+                // Strobe off - black
+                it[i] = Color(0, 0, 0);
+              } else {
+                // Calculate position-based effects
+                float position_factor = (float)i / it.size();
+                int wave_offset = (int)(position_factor * 180);
+                
+                // Pulsing intensity based on sine wave
+                float intensity = 0.5 + 0.5 * sin((phase + wave_offset) * PI / 180);
+                
+                // Select color based on position and time
+                int color_index = (color_shift + (i % 3)) % 6;
+                Color base_color = rave_colors[color_index];
+                
+                // Random sparkle effect
+                if (rand() % 100 < 10) {  // 10% chance of max brightness sparkle
+                  intensity = 1.0;
+                }
+                
+                // Apply intensity to color
+                it[i] = Color(
+                  base_color.r * intensity,
+                  base_color.g * intensity,
+                  base_color.b * intensity
+                );
+              }
+            }
+            
+            // Reset strobe counter to stay in sync
+            if (strobe_counter >= 22) {  // ~1 beat
+              strobe_counter = 0;
+            }
+      - addressable_lambda:
+          name: "TwinklingRed"
+          update_interval: 100ms  # Update frequently for subtle brightness changes
+          lambda: |-
+            for (int i = 0; i < it.size(); i++) {
+              // Generate a random brightness factor between 30% and 100%
+              float brightness_factor = 0.3 + (rand() % 70) / 100.0;
+              
+              // Apply brightness to red color (255, 0, 0) for Rudolph's nose twinkle effect
+              int red_value = 255 * brightness_factor;
+              
+              // Set LED color with adjusted brightness - pure red
+              it[i] = Color(red_value, 0, 0);
+            }
+      - addressable_lambda:
+          name: "TwinklingBlues"
+          update_interval: 150ms  # Slower update for more mellow blue effect
+          lambda: |-
+            for (int i = 0; i < it.size(); i++) {
+              // Generate random values for different shades of blue
+              float brightness = 0.4 + (rand() % 60) / 100.0; // 40% to 100% brightness
+              int shade_variation = rand() % 4; // 4 different blue shades
+              
+              int red_val = 0;
+              int green_val = 0;
+              int blue_val = 0;
+              
+              switch(shade_variation) {
+                case 0: // Deep blue
+                  red_val = 0 * brightness;
+                  green_val = 50 * brightness;
+                  blue_val = 255 * brightness;
+                  break;
+                case 1: // Sky blue
+                  red_val = 135 * brightness;
+                  green_val = 206 * brightness;
+                  blue_val = 235 * brightness;
+                  break;
+                case 2: // Royal blue
+                  red_val = 65 * brightness;
+                  green_val = 105 * brightness;
+                  blue_val = 225 * brightness;
+                  break;
+                case 3: // Ice blue
+                  red_val = 176 * brightness;
+                  green_val = 224 * brightness;
+                  blue_val = 230 * brightness;
+                  break;
+              }
+              
+              it[i] = Color(red_val, green_val, blue_val);
+            }
+
+script:
+  - id: play_song_1
+    then:
+      - light.turn_on:
+          brightness: 40%
+          id: rgb_light
+          effect: "RainbowWave"
+      - light.turn_on:
+          brightness: 30%
+          id: logo_light
+          effect: "RainbowWave"
+      - rtttl.play:
+          rtttl: !lambda 'return id(song_1).state;'
+      - delay: 30s
+      - light.turn_off: rgb_light
+      - light.turn_off: logo_light
+      - script.execute: ShouldSleep
+      
+  - id: play_song_2
+    then:
+      - light.turn_on:
+          brightness: 40%
+          id: rgb_light
+          effect: "TwinklingWhite"
+      - light.turn_on:
+          brightness: 60%
+          id: logo_light
+          effect: "TwinklingRed"
+      - rtttl.play:
+          rtttl: !lambda 'return id(song_2).state;'
+      - delay: 30s
+      - light.turn_off: rgb_light
+      - light.turn_off: logo_light
+      - script.execute: ShouldSleep
+
+  - id: play_song_3
+    then:
+      - light.turn_on:
+          brightness: 40%
+          id: rgb_light
+          effect: "RedGreen"
+      - light.turn_on:
+          brightness: 30%
+          id: logo_light
+          effect: "RedGreen"
+      - rtttl.play:
+          rtttl: !lambda 'return id(song_3).state;'
+      - delay: 30s
+      - light.turn_off: rgb_light
+      - light.turn_off: logo_light
+      - script.execute: ShouldSleep
+
+  - id: play_song_4
+    then:
+      - light.turn_on:
+          brightness: 50%
+          id: rgb_light
+          effect: "TwinklingBlues"
+      - light.turn_on:
+          brightness: 40%
+          id: logo_light
+          effect: "TwinklingBlues"
+      - rtttl.play:
+          rtttl: !lambda 'return id(song_4).state;'
+      - delay: 30s
+      - light.turn_off: rgb_light
+      - light.turn_off: logo_light
+      - script.execute: ShouldSleep
+
+  - id: play_song_x
+    then:
+      - light.turn_on:
+          brightness: 40%
+          id: rgb_light
+          effect: "Sandstorm"
+      - light.turn_on:
+          brightness: 30%
+          id: logo_light
+          effect: "Sandstorm"
+      - rtttl.play:
+          rtttl: Sandstorm:d=16,o=6,b=85:e,e,e,e,8e,e,e,a,a,a,a,g,g,g,d,e,e,e,e, 8e,e,a,e,e,e,e,8e,e,d,e,e,e,e,e,8e,e,e,a,a,a,a,g,g,g,d,e,e,e,e,8e,e, a,e,e,e,e,8e,e,d,e,e,e,e,e,8e,e,e,a,a,a,a,g,g,g,d,e,e,e,e,8e,e,a,e, e,e,e,8e,e,d,e
+      - delay: 30s
+      - light.turn_off: rgb_light
+      - light.turn_off: logo_light
+      - script.execute: ShouldSleep
+
+  - id: testScript
+    then:
+      - lambda: "id(runTest) = false;"
+      - light.turn_on:
+          id: rgb_light
+          brightness: 40%
+          red: 0%
+          green: 100%
+          blue: 0%
+      - delay: 5s
+      - light.turn_on:
+          id: rgb_light
+          red: 0%
+          green: 0%
+          blue: 0%
+      - light.turn_off:
+          id: rgb_light
