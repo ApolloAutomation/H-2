@@ -23,7 +23,7 @@ jobs:
       id-token: write
       pull-requests: write
     with:
-      device-name: h-1
+      device-name: h-2
       yaml-files: |
         Integrations/ESPHome/H-2.yaml
         Integrations/ESPHome/H-2D.yaml
