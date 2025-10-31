@@ -117,6 +117,7 @@ logger:
 captive_portal:
 
 web_server:
+  version: 3
   port: 80
 
 external_components:
