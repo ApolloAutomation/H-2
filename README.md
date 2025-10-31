@@ -1,6 +1,6 @@
 # Apollo H-2 Holiday Ornament
 
-![Apollo Automation H-2](Apollo-H-2.jpg)
+![Apollo Automation H-2](Apollo-H-2.JPG)
 
 **Key Features of the H-2:**
 
