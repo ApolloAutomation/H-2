@@ -78,7 +78,7 @@ esphome:
     - light.turn_off: rgb_light
 
 dashboard_import:
-  package_import_url: github://ApolloAutomation/H-1/Integrations/ESPHome/H-2.yaml
+  package_import_url: github://ApolloAutomation/H-2/Integrations/ESPHome/H-2.yaml
   import_full_config: false
 
 improv_serial:
@@ -101,7 +101,7 @@ update:
   - platform: http_request
     id: firmware_update
     name: Firmware Update
-    source: https://apolloautomation.github.io/H-1/firmware2/manifest.json
+    source: https://apolloautomation.github.io/H-2/firmware2/manifest.json
 
 wifi:
   on_connect:
