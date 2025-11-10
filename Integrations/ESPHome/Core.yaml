@@ -1,5 +1,5 @@
 substitutions:
-  version: "25.11.6.2"
+  version: "25.11.10.1"
 
 esp32:
   board: esp32-c6-devkitm-1
@@ -319,6 +319,7 @@ light:
     num_leds: 57
     rgb_order: grb
     rmt_symbols: 48
+    color_correct: [50%, 50%, 50%]
     effects:
       - pulse:
           name: "Slow Pulse"
@@ -553,6 +554,7 @@ light:
     num_leds: 34
     rgb_order: grb
     rmt_symbols: 48
+    color_correct: [40%, 40%, 40%]
     effects:
       - pulse:
           name: "Slow Pulse"
