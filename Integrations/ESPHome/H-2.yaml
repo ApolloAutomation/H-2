@@ -28,6 +28,7 @@ esphome:
     # Check button states for powered-off scenario
     - priority: -100
       then:
+      - delay: 75ms  # Debounce delay to allow button state to stabilize
       - lambda: |-
           uint64_t wake = esp_sleep_get_ext1_wakeup_status();
           
@@ -38,22 +39,50 @@ esphome:
             
             ESP_LOGI("Apollo", "Deep sleep wake detected, wake status: 0x%llx", wake);
             
-            // Check which song button caused the wake-up
+            // Check which song button caused the wake-up AND verify it's still pressed
             if ((low) & (1<<(4))) {
-              id(wakeup_button_pressed).publish_state("1");
-              id(btn_play_song_1).press();
+              // Verify button 1 is still pressed after debounce delay
+              if (id(back_button_1).state) {
+                ESP_LOGI("Apollo", "Button 1 verified pressed, playing song");
+                id(wakeup_button_pressed).publish_state("1");
+                id(btn_play_song_1).press();
+              } else {
+                ESP_LOGW("Apollo", "Button 1 triggered wake but not held, returning to sleep");
+                id(wakeup_button_pressed).publish_state("0");
+              }
             }
             else if ((low) & (1<<(5))) {
-              id(wakeup_button_pressed).publish_state("2");
-              id(btn_play_song_2).press();
+              // Verify button 2 is still pressed after debounce delay
+              if (id(back_button_2).state) {
+                ESP_LOGI("Apollo", "Button 2 verified pressed, playing song");
+                id(wakeup_button_pressed).publish_state("2");
+                id(btn_play_song_2).press();
+              } else {
+                ESP_LOGW("Apollo", "Button 2 triggered wake but not held, returning to sleep");
+                id(wakeup_button_pressed).publish_state("0");
+              }
             }
             else if ((low) & (1<<(6))) {
-              id(wakeup_button_pressed).publish_state("3");
-              id(btn_play_song_3).press();
+              // Verify button 3 is still pressed after debounce delay
+              if (id(back_button_3).state) {
+                ESP_LOGI("Apollo", "Button 3 verified pressed, playing song");
+                id(wakeup_button_pressed).publish_state("3");
+                id(btn_play_song_3).press();
+              } else {
+                ESP_LOGW("Apollo", "Button 3 triggered wake but not held, returning to sleep");
+                id(wakeup_button_pressed).publish_state("0");
+              }
             }
             else if ((low) & (1<<(7))) {
-              id(wakeup_button_pressed).publish_state("4");
-              id(btn_play_song_4).press();
+              // Verify button 4 is still pressed after debounce delay
+              if (id(back_button_4).state) {
+                ESP_LOGI("Apollo", "Button 4 verified pressed, playing song");
+                id(wakeup_button_pressed).publish_state("4");
+                id(btn_play_song_4).press();
+              } else {
+                ESP_LOGW("Apollo", "Button 4 triggered wake but not held, returning to sleep");
+                id(wakeup_button_pressed).publish_state("0");
+              }
             }
             else {
               id(wakeup_button_pressed).publish_state("0");
