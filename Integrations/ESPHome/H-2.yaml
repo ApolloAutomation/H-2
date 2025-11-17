@@ -101,7 +101,7 @@ update:
   - platform: http_request
     id: firmware_update
     name: Firmware Update
-    source: https://apolloautomation.github.io/H-2/firmware2/manifest.json
+    source: https://apolloautomation.github.io/H-2/firmware/manifest.json
 
 wifi:
   on_connect:
