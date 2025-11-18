@@ -1,5 +1,5 @@
 substitutions:
-  version: "25.11.10.2"
+  version: "25.11.18.1"
 
 esp32:
   board: esp32-c6-devkitm-1
@@ -12,7 +12,7 @@ output:
   - platform: ledc
     pin: GPIO20
     id: buzzer
-    max_power: 60%
+    max_power: 50%
 
 rtttl:
   id: rtttl_buzzer
@@ -797,6 +797,11 @@ light:
 script:
   - id: play_song_1
     then:
+      - lambda: |-
+          ESP_LOGW("WiFi", "Disabling WiFi for song playback");
+          wifi::global_wifi_component->disable();
+      - delay: 100ms
+      
       - light.turn_on:
           brightness: 80%
           id: rgb_light
@@ -810,10 +815,21 @@ script:
       - delay: 30s
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
+      
+      - lambda: |-
+          ESP_LOGW("WiFi", "Re-enabling WiFi after song playback");
+          wifi::global_wifi_component->enable();
+      - delay: 100ms
+      
       - script.execute: ShouldSleep
       
   - id: play_song_2
     then:
+      - lambda: |-
+          ESP_LOGW("WiFi", "Disabling WiFi for song playback");
+          wifi::global_wifi_component->disable();
+      - delay: 100ms
+      
       - light.turn_on:
           brightness: 80%
           id: rgb_light
@@ -827,10 +843,21 @@ script:
       - delay: 30s
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
+      
+      - lambda: |-
+          ESP_LOGW("WiFi", "Re-enabling WiFi after song playback");
+          wifi::global_wifi_component->enable();
+      - delay: 100ms
+      
       - script.execute: ShouldSleep
 
   - id: play_song_3
     then:
+      - lambda: |-
+          ESP_LOGW("WiFi", "Disabling WiFi for song playback");
+          wifi::global_wifi_component->disable();
+      - delay: 100ms
+      
       - light.turn_on:
           brightness: 80%
           id: rgb_light
@@ -844,10 +871,21 @@ script:
       - delay: 30s
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
+      
+      - lambda: |-
+          ESP_LOGW("WiFi", "Re-enabling WiFi after song playback");
+          wifi::global_wifi_component->enable();
+      - delay: 100ms
+      
       - script.execute: ShouldSleep
 
   - id: play_song_4
     then:
+      - lambda: |-
+          ESP_LOGW("WiFi", "Disabling WiFi for song playback");
+          wifi::global_wifi_component->disable();
+      - delay: 100ms  
+      
       - light.turn_on:
           brightness: 80%
           id: rgb_light
@@ -861,10 +899,21 @@ script:
       - delay: 30s
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
+      
+      - lambda: |-
+          ESP_LOGW("WiFi", "Re-enabling WiFi after song playback");
+          wifi::global_wifi_component->enable();
+      - delay: 100ms
+      
       - script.execute: ShouldSleep
 
   - id: play_song_x
     then:
+      - lambda: |-
+          ESP_LOGW("WiFi", "Disabling WiFi for Sandstorm playback");
+          wifi::global_wifi_component->disable();
+      - delay: 100ms
+      
       - light.turn_on:
           brightness: 80%
           id: rgb_light
@@ -878,6 +927,12 @@ script:
       - delay: 30s
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
+      
+      - lambda: |-
+          ESP_LOGW("WiFi", "Re-enabling WiFi after Sandstorm playback");
+          wifi::global_wifi_component->enable();
+      - delay: 100ms
+      
       - script.execute: ShouldSleep
 
   - id: testScript
