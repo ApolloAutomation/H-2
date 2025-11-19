@@ -80,6 +80,45 @@ switch:
     restore_mode: ALWAYS_ON
     setup_priority: 2000
     internal: true
+    
+  # Power mode switch for battery vs USB-C/mains power
+  - platform: template
+    name: "USB Power Mode"
+    id: usb_power_mode
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF  # Default to battery-safe mode (OFF)
+    icon: "mdi:power-plug"
+    device_class: switch
+    on_turn_on:
+      then:
+        - logger.log:
+            format: "USB Power Mode enabled - setting volume to 100%"
+            level: INFO
+            tag: "PowerMode"
+        - number.set:
+            id: volume_control
+            value: 100
+        - logger.log:
+            format: "USB/High Power Mode ENABLED - Allowing full buzzer power (100%)"
+            level: INFO
+            tag: "PowerMode"
+        - logger.log:
+            format: "Volume limit removed - Make sure device is connected to USB-C/mains power"
+            level: WARN
+            tag: "PowerMode"
+    on_turn_off:
+      then:
+        - logger.log:
+            format: "Battery mode enabled - setting volume to 25%"
+            level: INFO
+            tag: "PowerMode"
+        - number.set:
+            id: volume_control
+            value: 25
+        - logger.log:
+            format: "Battery Power Mode ENABLED - Limiting buzzer to 25 for battery safety"
+            level: INFO
+            tag: "PowerMode"
 
 button:
   - platform: factory_reset
@@ -137,13 +176,55 @@ number:
     id: volume_control
     min_value: 0
     max_value: 100
-    initial_value: 100
+    initial_value: 25  # Default to battery-safe 25%
     unit_of_measurement: "%"
     step: 1
     optimistic: true
     restore_value: true
+    icon: "mdi:volume-high"
     on_value:
-      - lambda: id(rtttl_buzzer).set_gain(pow(x / 100.0f, 3));
+      then:
+        - if:
+            condition:
+              # If USB power mode is OFF (battery mode), enforce 25% limit
+              and:
+                - switch.is_off: usb_power_mode
+                - lambda: 'return x > 25.0;'
+            then:
+              - logger.log:
+                  format: "Battery mode active - limiting volume to 25%%"
+                  level: WARN
+                  tag: "Volume"
+              - number.set:
+                  id: volume_control
+                  value: 25
+              - lambda: |-
+                  // Apply cubic scaling with 25% limit for battery mode
+                  id(rtttl_buzzer).set_gain(pow(25.0 / 100.0f, 3));
+            else:
+              - if:
+                  condition:
+                    switch.is_on: usb_power_mode
+                  then:
+                    - logger.log:
+                        format: "USB mode active - setting volume to %.0f%%"
+                        args: ['x']
+                        level: INFO
+                        tag: "Volume"
+                  else:
+                    - logger.log:
+                        format: "Battery mode active - setting volume to %.0f%% (max 25%%)"
+                        args: ['x']
+                        level: INFO
+                        tag: "Volume"
+              - lambda: |-
+                  // Apply cubic scaling for better volume control
+                  float actual_volume = x;
+                  // Enforce power mode limits
+                  if (!id(usb_power_mode).state && actual_volume > 25.0) {
+                    actual_volume = 25.0;
+                  }
+                  id(rtttl_buzzer).set_gain(pow(actual_volume / 100.0f, 3));
 
 text_sensor:
   - platform: template
@@ -797,10 +878,41 @@ light:
 script:
   - id: play_song_1
     then:
-      - lambda: |-
-          ESP_LOGW("WiFi", "Disabling WiFi for song playback");
-          wifi::global_wifi_component->disable();
+      - logger.log:
+          format: "Disabling WiFi for song playback"
+          level: WARN
+          tag: "WiFi"
+      - wifi.disable:
       - delay: 100ms
+      
+      # Apply volume based on power mode
+      - if:
+          condition:
+            switch.is_off: usb_power_mode
+          then:
+            # Battery mode - limit to 25%
+            - if:
+                condition:
+                  lambda: 'return id(volume_control).state > 25.0;'
+                then:
+                  - logger.log:
+                      format: "Battery mode active - limiting buzzer volume to 25%%"
+                      level: INFO
+                      tag: "PlaySong"
+                  - lambda: |-
+                      id(rtttl_buzzer).set_gain(pow(25.0 / 100.0f, 3));
+                else:
+                  - lambda: |-
+                      id(rtttl_buzzer).set_gain(pow(id(volume_control).state / 100.0f, 3));
+          else:
+            # USB mode - use full volume setting
+            - logger.log:
+                format: "USB mode active - using volume setting: %.0f%%"
+                args: ['id(volume_control).state']
+                level: INFO
+                tag: "PlaySong"
+            - lambda: |-
+                id(rtttl_buzzer).set_gain(pow(id(volume_control).state / 100.0f, 3));
       
       - light.turn_on:
           brightness: 80%
@@ -816,19 +928,52 @@ script:
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
       
-      - lambda: |-
-          ESP_LOGW("WiFi", "Re-enabling WiFi after song playback");
-          wifi::global_wifi_component->enable();
+      - logger.log:
+          format: "Re-enabling WiFi after song playback"
+          level: WARN
+          tag: "WiFi"
+      - wifi.enable:
       - delay: 100ms
       
       - script.execute: ShouldSleep
       
   - id: play_song_2
     then:
-      - lambda: |-
-          ESP_LOGW("WiFi", "Disabling WiFi for song playback");
-          wifi::global_wifi_component->disable();
+      - logger.log:
+          format: "Disabling WiFi for song playback"
+          level: WARN
+          tag: "WiFi"
+      - wifi.disable:
       - delay: 100ms
+      
+      # Apply volume based on power mode
+      - if:
+          condition:
+            switch.is_off: usb_power_mode
+          then:
+            # Battery mode - limit to 25%
+            - if:
+                condition:
+                  lambda: 'return id(volume_control).state > 25.0;'
+                then:
+                  - logger.log:
+                      format: "Battery mode active - limiting buzzer volume to 25%%"
+                      level: INFO
+                      tag: "PlaySong"
+                  - lambda: |-
+                      id(rtttl_buzzer).set_gain(pow(25.0 / 100.0f, 3));
+                else:
+                  - lambda: |-
+                      id(rtttl_buzzer).set_gain(pow(id(volume_control).state / 100.0f, 3));
+          else:
+            # USB mode - use full volume setting
+            - logger.log:
+                format: "USB mode active - using volume setting: %.0f%%"
+                args: ['id(volume_control).state']
+                level: INFO
+                tag: "PlaySong"
+            - lambda: |-
+                id(rtttl_buzzer).set_gain(pow(id(volume_control).state / 100.0f, 3));
       
       - light.turn_on:
           brightness: 80%
@@ -844,19 +989,52 @@ script:
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
       
-      - lambda: |-
-          ESP_LOGW("WiFi", "Re-enabling WiFi after song playback");
-          wifi::global_wifi_component->enable();
+      - logger.log:
+          format: "Re-enabling WiFi after song playback"
+          level: WARN
+          tag: "WiFi"
+      - wifi.enable:
       - delay: 100ms
       
       - script.execute: ShouldSleep
 
   - id: play_song_3
     then:
-      - lambda: |-
-          ESP_LOGW("WiFi", "Disabling WiFi for song playback");
-          wifi::global_wifi_component->disable();
+      - logger.log:
+          format: "Disabling WiFi for song playback"
+          level: WARN
+          tag: "WiFi"
+      - wifi.disable:
       - delay: 100ms
+      
+      # Apply volume based on power mode
+      - if:
+          condition:
+            switch.is_off: usb_power_mode
+          then:
+            # Battery mode - limit to 25%
+            - if:
+                condition:
+                  lambda: 'return id(volume_control).state > 25.0;'
+                then:
+                  - logger.log:
+                      format: "Battery mode active - limiting buzzer volume to 25%%"
+                      level: INFO
+                      tag: "PlaySong"
+                  - lambda: |-
+                      id(rtttl_buzzer).set_gain(pow(25.0 / 100.0f, 3));
+                else:
+                  - lambda: |-
+                      id(rtttl_buzzer).set_gain(pow(id(volume_control).state / 100.0f, 3));
+          else:
+            # USB mode - use full volume setting
+            - logger.log:
+                format: "USB mode active - using volume setting: %.0f%%"
+                args: ['id(volume_control).state']
+                level: INFO
+                tag: "PlaySong"
+            - lambda: |-
+                id(rtttl_buzzer).set_gain(pow(id(volume_control).state / 100.0f, 3));
       
       - light.turn_on:
           brightness: 80%
@@ -872,19 +1050,52 @@ script:
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
       
-      - lambda: |-
-          ESP_LOGW("WiFi", "Re-enabling WiFi after song playback");
-          wifi::global_wifi_component->enable();
+      - logger.log:
+          format: "Re-enabling WiFi after song playback"
+          level: WARN
+          tag: "WiFi"
+      - wifi.enable:
       - delay: 100ms
       
       - script.execute: ShouldSleep
 
   - id: play_song_4
     then:
-      - lambda: |-
-          ESP_LOGW("WiFi", "Disabling WiFi for song playback");
-          wifi::global_wifi_component->disable();
-      - delay: 100ms  
+      - logger.log:
+          format: "Disabling WiFi for song playback"
+          level: WARN
+          tag: "WiFi"
+      - wifi.disable:
+      - delay: 100ms
+      
+      # Apply volume based on power mode
+      - if:
+          condition:
+            switch.is_off: usb_power_mode
+          then:
+            # Battery mode - limit to 25%
+            - if:
+                condition:
+                  lambda: 'return id(volume_control).state > 25.0;'
+                then:
+                  - logger.log:
+                      format: "Battery mode active - limiting buzzer volume to 25%%"
+                      level: INFO
+                      tag: "PlaySong"
+                  - lambda: |-
+                      id(rtttl_buzzer).set_gain(pow(25.0 / 100.0f, 3));
+                else:
+                  - lambda: |-
+                      id(rtttl_buzzer).set_gain(pow(id(volume_control).state / 100.0f, 3));
+          else:
+            # USB mode - use full volume setting
+            - logger.log:
+                format: "USB mode active - using volume setting: %.0f%%"
+                args: ['id(volume_control).state']
+                level: INFO
+                tag: "PlaySong"
+            - lambda: |-
+                id(rtttl_buzzer).set_gain(pow(id(volume_control).state / 100.0f, 3));
       
       - light.turn_on:
           brightness: 80%
@@ -900,19 +1111,43 @@ script:
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
       
-      - lambda: |-
-          ESP_LOGW("WiFi", "Re-enabling WiFi after song playback");
-          wifi::global_wifi_component->enable();
+      - logger.log:
+          format: "Re-enabling WiFi after song playback"
+          level: WARN
+          tag: "WiFi"
+      - wifi.enable:
       - delay: 100ms
       
       - script.execute: ShouldSleep
 
   - id: play_song_x
     then:
-      - lambda: |-
-          ESP_LOGW("WiFi", "Disabling WiFi for Sandstorm playback");
-          wifi::global_wifi_component->disable();
+      - logger.log:
+          format: "Disabling WiFi for Sandstorm playback"
+          level: WARN
+          tag: "WiFi"
+      - wifi.disable:
       - delay: 100ms
+      
+      # Check battery level and apply volume limit
+      - if:
+          condition:
+            and:
+              - sensor.in_range:
+                  id: batt_pct
+                  below: 50.0
+              - lambda: 'return id(volume_control).state > 25.0;'
+          then:
+            - logger.log:
+                format: "Low battery (%.1f%%) - limiting buzzer volume to 25%%"
+                args: ['id(batt_pct).state']
+                level: WARN
+                tag: "Battery"
+            - lambda: |-
+                id(rtttl_buzzer).set_gain(pow(25.0 / 100.0f, 3));
+          else:
+            - lambda: |-
+                id(rtttl_buzzer).set_gain(pow(id(volume_control).state / 100.0f, 3));
       
       - light.turn_on:
           brightness: 80%
@@ -928,9 +1163,11 @@ script:
       - light.turn_off: rgb_light
       - light.turn_off: logo_light
       
-      - lambda: |-
-          ESP_LOGW("WiFi", "Re-enabling WiFi after Sandstorm playback");
-          wifi::global_wifi_component->enable();
+      - logger.log:
+          format: "Re-enabling WiFi after Sandstorm playback"
+          level: WARN
+          tag: "WiFi"
+      - wifi.enable:
       - delay: 100ms
       
       - script.execute: ShouldSleep
