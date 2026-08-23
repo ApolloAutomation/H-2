@@ -108,6 +108,8 @@ wifi:
 
 logger:
 
+improv_serial:
+
 captive_portal:
 
 external_components:
