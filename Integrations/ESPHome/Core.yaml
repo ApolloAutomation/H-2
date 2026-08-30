@@ -1,5 +1,5 @@
 substitutions:
-  version: "25.12.2.1"
+  version: "26.8.27.1"
 
 esp32:
   board: esp32-c6-devkitm-1
@@ -318,7 +318,7 @@ light:
     default_transition_length: 0s
     chipset: WS2812
     num_leds: 57
-    rgb_order: grb
+    channel_colors: GRB
     rmt_symbols: 48
     color_correct: [40%, 40%, 40%]
     effects:
@@ -553,7 +553,7 @@ light:
     default_transition_length: 0s
     chipset: WS2812
     num_leds: 34
-    rgb_order: grb
+    channel_colors: GRB
     rmt_symbols: 48
     color_correct: [30%, 30%, 30%]
     effects:

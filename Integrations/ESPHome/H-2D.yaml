@@ -10,7 +10,7 @@ esphome:
     name: "ApolloAutomation.H-2D"
     version: "${version}"
 
-  min_version: 2023.11.1
+  min_version: 2026.8.0
   on_boot:
     - priority: 500
       then:
