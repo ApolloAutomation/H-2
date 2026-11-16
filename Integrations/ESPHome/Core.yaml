@@ -1,5 +1,5 @@
 substitutions:
-  version: "26.8.27.1"
+  version: "26.11.15.1"
 
 esp32:
   board: esp32-c6-devkitm-1
@@ -208,6 +208,7 @@ binary_sensor:
         - lambda: |-
             if (millis() - id(button_press_timestamp) >= 10000) {
               // Remove Wifi
+              id(prevent_sleep).turn_on();
               id(factory_reset_switch).turn_on();
             }
             else if (millis() - id(button_press_timestamp) >= 3000) {
