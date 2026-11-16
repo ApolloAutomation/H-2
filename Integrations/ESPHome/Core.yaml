@@ -1,5 +1,5 @@
 substitutions:
-  version: "26.11.15.1"
+  version: "26.11.16.1"
 
 esp32:
   board: esp32-c6-devkitm-1
@@ -205,26 +205,34 @@ binary_sensor:
             id(button_press_timestamp) = millis();
     on_release:
       then:
-        - lambda: |-
-            if (millis() - id(button_press_timestamp) >= 10000) {
-              // Remove Wifi
-              id(prevent_sleep).turn_on();
-              id(factory_reset_switch).turn_on();
-            }
-            else if (millis() - id(button_press_timestamp) >= 3000) {
-              //Turn Prevent Sleep On
-              id(prevent_sleep).turn_on();
-              //Prevent Sleep
-              id(deep_sleep_1).prevent_deep_sleep();
-            }
-            else {
-              // StatusCheck
-              id(statusCheck).execute();
-              delay(3000);
-              id(testCycleCount) = 0;
-              id(runTest) = true;
-              id(testScript).execute();
-            }
+        - if:
+            condition:
+              lambda: "return millis() - id(button_press_timestamp) >= 10000;"
+            then:
+              # Remove Wifi
+              - lambda: |-
+                  id(prevent_sleep).turn_on();
+                  id(factory_reset_switch).turn_on();
+            else:
+              - if:
+                  condition:
+                    lambda: "return millis() - id(button_press_timestamp) >= 3000;"
+                  then:
+                    # Turn Prevent Sleep On
+                    - lambda: |-
+                        id(prevent_sleep).turn_on();
+                        id(deep_sleep_1).prevent_deep_sleep();
+                  else:
+                    # Let the status colour run its full window before the
+                    # self-test LED takes over; a blocking delay would stall
+                    # the main loop and the LED with it.
+                    - script.execute: statusCheck
+                    - script.wait: statusCheck
+                    - delay: 3s
+                    - lambda: |-
+                        id(testCycleCount) = 0;
+                        id(runTest) = true;
+                    - script.execute: testScript
 
   # H-2 Individual Song Buttons (4 buttons)
   - platform: gpio

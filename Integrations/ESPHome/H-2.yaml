@@ -161,10 +161,6 @@ logger:
 
 captive_portal:
 
-external_components:
-  - source: github://ApolloAutomation/ExternalComponents
-    components: [deep_sleep]
-
 web_server:
   port: 80
   version: 3
